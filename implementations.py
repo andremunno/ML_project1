@@ -126,7 +126,10 @@ def least_squares(y, tx):
         w: a numpy arrays of shape (2, ), of the corresponding loss
         loss: the loss value (scalar) of the Least squares
     """
-    # TODO
+    A = np.transpose(tx) @ tx
+    b = np.transpose(tx) @ y
+    w = np.linalg.solve(A, b)
+    loss = compute_mse(y, tx, w)
 
     return w, loss
 
