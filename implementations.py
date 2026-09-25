@@ -144,7 +144,10 @@ def ridge_regression(y, tx, lambda_):
         w: a numpy arrays of shape (2, ), of the corresponding loss
         loss: the loss value (scalar) of  the Ridge regression
     """
-    # TODO
+    A = np.transpose(tx) @ tx + 2 * y.shape[0] * lambda_ * np.eye(tx.shape[1])
+    b = np.transpose(tx) @ y
+    w = np.linalg.solve(A, b)
+    loss = compute_mse(y, tx, w)
 
     return w, loss
 
