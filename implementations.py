@@ -99,6 +99,54 @@ def batch_iter(y, tx, batch_size, num_batches=1, shuffle=True):
         )  # The first data point of the following batch
         yield y[start_index:end_index], tx[start_index:end_index]
 
+def sigmoid(t):
+    """apply sigmoid function on t.
+
+    Args:
+        t: scalar or numpy array
+
+    Returns:
+        scalar or numpy array
+
+    """
+    return 1 / (1 + np.exp(-t))
+
+def compute_logistic_loss(y, tx, w):
+    """compute the cost by negative log likelihood.
+
+    Args:
+        y:  shape=(N, 1)
+        tx: shape=(N, D)
+        w:  shape=(D, 1)
+
+    Returns:
+        a non-negative loss
+    """
+    assert y.shape[0] == tx.shape[0]
+    assert tx.shape[1] == w.shape[0]
+
+    z = tx @ w
+    loss = np.mean(np.logaddexp(0, z) - y * z)
+
+    return float(loss)
+
+def compute_logistic_gradient(y, tx, w):
+    """compute the gradient of loss.
+
+    Args:
+        y:  shape=(N, 1)
+        tx: shape=(N, D)
+        w:  shape=(D, 1)
+
+    Returns:
+        a vector of shape (D, 1)
+    """
+    N = y.shape[0]
+    # ***************************************************
+    grad = 1 / N * np.transpose(tx) @ (sigmoid(tx @ w) - y)
+    # ***************************************************
+    return grad
+
 
 
 # ---- Required methods ----
@@ -224,7 +272,17 @@ def logistic_regression(y, tx, initial_w, max_iters, gamma):
         w: a numpy arrays of shape (2, ), for the last iteration of Logistic regression
         loss: the loss value (scalar) for the last iteration of Logistic regression
     """
-    # TODO
+    w = initial_w
+    loss = compute_logistic_loss(y, tx, w)
+    # start the logistic regression
+    for iter in range(max_iters):
+        # get loss and update w.
+        grad = compute_logistic_gradient(y, tx, w)
+        w = w - gamma * grad
+        loss = compute_logistic_loss(y, tx, w)
+        # log info
+        if iter % 100 == 0:
+            print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
 
     return w, loss
 
@@ -242,6 +300,17 @@ def reg_logistic_regression(y, tx, lambda_,initial_w, max_iters, gamma):
         w: a numpy arrays of shape (2, ), for the last iteration of Logistic regression
         loss: the loss value (scalar) for the last iteration of Logistic regression
     """
-    # TODO
+    w = initial_w
+    loss = compute_logistic_loss(y, tx, w)
+    # start the logistic regression
+    for iter in range(max_iters):
+        # get loss and update w.
+        grad = compute_logistic_gradient(y, tx, w) + 2 * lambda_ * w
+        w = w - gamma * grad
+        loss = compute_logistic_loss(y, tx, w)
+        # log info
+        if iter % 100 == 0:
+            print("Current iteration={i}, loss={l}".format(i=iter, l=loss))
+
 
     return w, loss
