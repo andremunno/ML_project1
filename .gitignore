@@ -1,4 +1,3 @@
-data/
-submissions/
-*.csv
-notebooks/
+data/raw
+data/submissions
+docs/
