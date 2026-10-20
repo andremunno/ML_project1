@@ -1,4 +1,4 @@
-"""Missing-value handling (Lorenzo)."""
+"""Metadata-driven cleaning and median imputation (Lorenzo)."""
 
 import numpy as np
 
@@ -9,56 +9,32 @@ def clean(X, meta, names):
     na_values -> NaN, zero_values -> 0, recode {old: new}, then multiply by scale.
 
     Args:
-        X: numpy array (N, D)
+        X: numpy array (N, D) of raw values
         meta: dict from load_metadata
         names: list of the D column names of X
 
     Returns:
         numpy array (N, D)
     """
-
-    X_clean = X.copy()
+    X_clean = np.array(X, dtype=float)
 
     for j, name in enumerate(names):
-        # Check if the feature has defined metadata rules
-        if name in meta:
-            col_meta = meta[name]
-            col_data = X_clean[:, j]
+        col_meta = meta[name]
+        raw = X[:, j]
+        col_data = X_clean[:, j]
 
-            # Conversion na_values -> NaN
-            na_vals = col_meta.get("na_values")
-            if na_vals:
-                col_data[np.isin(col_data, na_vals)] = np.nan
+        # Conversion na_values -> NaN
+        col_data[np.isin(raw, col_meta["na_values"])] = np.nan
 
-            # Conversion zero_values -> 0.0
-            zero_vals = col_meta.get("zero_values")
-            if zero_vals:
-                col_data[np.isin(col_data, zero_vals)] = 0.0
+        # Conversion zero_values -> 0.0
+        col_data[np.isin(raw, col_meta["zero_values"])] = 0.0
 
-            # Recoding old values -> new values
-            recode_dict = col_meta.get("recode")
-            if recode_dict:
-                for old_val_str, new_val in recode_dict.items():
-                    # If the key is already a number, use it directly
-                    if isinstance(old_val_str, (int, float)):
-                        old_val = old_val_str
-                    elif isinstance(old_val_str, str):
-                        try:
-                            # Check for decimal point only if it's a string
-                            old_val = float(old_val_str) if '.' in old_val_str else int(old_val_str)
-                        except ValueError:
-                            old_val = old_val_str
-                    else:
-                        old_val = old_val_str
-                    
-                    col_data[col_data == old_val] = new_val
+        # Recoding old values -> new values (keys are strings in the metadata)
+        for old_val, new_val in col_meta["recode"].items():
+            col_data[raw == float(old_val)] = new_val
 
-            # Multiplication by scale factor (NumPy handles multiplication with NaNs automatically)
-            scale_val = col_meta.get("scale")
-            if scale_val is not None and scale_val != 1.0:
-                col_data = col_data * scale_val
-
-            X_clean[:, j] = col_data
+        # Multiplication by scale factor (NaNs stay NaN)
+        col_data *= col_meta["scale"]
 
     return X_clean
 
@@ -74,7 +50,7 @@ def fit_impute(X):
     stats = np.nanmedian(X, axis=0)
 
     # If a column is all nans, set its median to be 0.0
-    stats = np.nat_to_num(stats, nan=0.0)
+    stats = np.nan_to_num(stats, nan=0.0)
 
     return stats
 

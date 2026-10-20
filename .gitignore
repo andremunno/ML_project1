@@ -1,6 +1,5 @@
 # Data (too large / generated)
 data/raw/
-data/encoded/
 tmp/
 data/submissions/
 experiments/results/

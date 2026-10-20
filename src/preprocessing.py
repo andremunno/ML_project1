@@ -1,7 +1,28 @@
+"""Data loading, feature selection and the full preprocessing pipeline (Andrea).
+
+Pipeline: select_features -> clean (missing) -> decode (brfss) -> encode (encoding).
+Fit on training rows only, then apply the same state to train, validation and test.
+"""
+
 import csv
 import json
 
+import numpy as np
+
+from helpers import load_csv_data
+from src.brfss import decode
 from src.config import DATA_DIR, METADATA_PATH
+from src.encoding import apply_encode, fit_encode
+from src.missing import clean
+
+
+def load_data(data_path=DATA_DIR):
+    """load_csv_data, cached in data_path/cache.npz after the first (slow) call."""
+    cache = data_path / "cache.npz"
+    if not cache.exists():
+        np.savez(cache, *load_csv_data(data_path))
+    data = np.load(cache)
+    return tuple(data[f"arr_{i}"] for i in range(5))
 
 
 def load_feature_names(data_path=DATA_DIR):
@@ -31,3 +52,32 @@ def select_features(meta, feature_names, max_group):
         and meta[name]["group"]
         and int(meta[name]["group"]) <= max_group
     ]
+
+
+def _clean_and_decode(X_raw, meta, names, cols):
+    selected = [names[j] for j in cols]
+    X = clean(X_raw[:, cols], meta, selected)
+    return decode(X, meta, selected)
+
+
+def fit_preprocess(X_raw, meta, names, max_group, min_frequency=50):
+    """Learn the preprocessing on the training rows.
+
+    Returns:
+        state: dict used by apply_preprocess
+    """
+    cols = select_features(meta, names, max_group)
+    X, meta_dec, names_dec = _clean_and_decode(X_raw, meta, names, cols)
+    encoder = fit_encode(X, meta_dec, names_dec, min_frequency)
+    return {"cols": cols, "encoder": encoder}
+
+
+def apply_preprocess(X_raw, meta, names, state):
+    """Apply the learned preprocessing to any rows (train, validation or test).
+
+    Returns:
+        X: float32 numpy array (N, D'), without NaNs and without bias column
+        names: list of the D' column names
+    """
+    X, _, _ = _clean_and_decode(X_raw, meta, names, state["cols"])
+    return apply_encode(X, state["encoder"])
