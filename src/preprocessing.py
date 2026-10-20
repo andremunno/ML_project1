@@ -1,6 +1,6 @@
 """Data loading, feature selection and the full preprocessing pipeline (Andrea).
 
-Pipeline: select_features -> clean (missing) -> decode (brfss) -> encode (encoding).
+Pipeline: select_features -> clean (missing) -> decode (brfss) -> encode (encoding) -> standardize.
 Fit on training rows only, then apply the same state to train, validation and test.
 """
 
@@ -69,7 +69,12 @@ def fit_preprocess(X_raw, meta, names, max_group, min_frequency=50):
     cols = select_features(meta, names, max_group)
     X, meta_dec, names_dec = _clean_and_decode(X_raw, meta, names, cols)
     encoder = fit_encode(X, meta_dec, names_dec, min_frequency)
-    return {"cols": cols, "encoder": encoder}
+
+    # Standardize every encoded column, 0/1 columns included
+    X_enc, _ = apply_encode(X, encoder)
+    std = X_enc.std(axis=0)
+    std[std == 0] = 1.0
+    return {"cols": cols, "encoder": encoder, "mean": X_enc.mean(axis=0), "std": std}
 
 
 def apply_preprocess(X_raw, meta, names, state):
@@ -80,4 +85,5 @@ def apply_preprocess(X_raw, meta, names, state):
         names: list of the D' column names
     """
     X, _, _ = _clean_and_decode(X_raw, meta, names, state["cols"])
-    return apply_encode(X, state["encoder"])
+    X_enc, out_names = apply_encode(X, state["encoder"])
+    return (X_enc - state["mean"]) / state["std"], out_names

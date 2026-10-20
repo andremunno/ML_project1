@@ -26,7 +26,7 @@ Put `x_train.csv`, `y_train.csv` and `x_test.csv` in `data/raw/`.
 ## Preprocessing
 
 ```
-select_features -> clean -> decode -> encode
+select_features -> clean -> decode -> encode -> standardize
 ```
 
 1. **select_features**: variables with `use == include` and `group <= max_group` (groups 1 to 5).
@@ -35,7 +35,8 @@ select_features -> clean -> decode -> encode
    special answers (e.g. `LASTSMK2 = 8`, never smoked regularly) to a separate 0/1 flag.
 4. **encode**: binary variables to one 0/1 column; nominal variables to one-hot without the most
    frequent level, rare levels (< 50 in training) pooled in `__other`; ordinal and numeric variables
-   median-imputed and standardized; a `__missing` flag for every column with missing values.
+   median-imputed; a `__missing` flag for every column with missing values.
+5. **standardize**: every encoded column (0/1 columns included) to mean 0 and standard deviation 1.
 
 Everything learned from data (levels, medians, means, standard deviations) is fitted on the
 training rows only:
