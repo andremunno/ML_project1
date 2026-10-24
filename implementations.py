@@ -109,7 +109,7 @@ def sigmoid(t):
         scalar or numpy array
 
     """
-    return 1 / (1 + np.exp(-t))
+    return np.exp(-np.logaddexp(0, -np.asarray(t, dtype=float)))
 
 def compute_logistic_loss(y, tx, w):
     """compute the cost by negative log likelihood.

@@ -1,7 +1,14 @@
-# Data (too large / generated)
-data/raw/
+# Keep datasets and generated data local; retain the small shared metadata.
+/data/*
+!/data/metadata/
+
+# Dataset archives and NumPy arrays/caches, wherever they are saved.
+*.zip
+*.npy
+*.npz
+
+# Other generated outputs
 tmp/
-data/submissions/
 experiments/results/
 
 # Course documents
